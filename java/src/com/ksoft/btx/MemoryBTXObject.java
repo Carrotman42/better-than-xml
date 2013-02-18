@@ -13,6 +13,11 @@ class MemoryBTXObject implements BTXObject {
 	}
 	
 	@Override
+	public String getName() {
+		return name;
+	}
+	
+	@Override
 	public int getAttributeCount() {
 		return attrs.size();
 	}
