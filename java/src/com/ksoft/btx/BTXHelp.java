@@ -39,24 +39,27 @@ public class BTXHelp {
 }
 
 class BTXHelp_0 {
-	static MemoryBTXObject readObject_0(DataInput in) throws IOException {
-		String name = new String(readRunLenBytes(in));
+	static MemoryBTXAttribute readAttribute(DataInput in) throws IOException {
+		String atrrName = readString(in);
+		byte meta = in.readByte();
+		byte[] data;
+		if (meta == 0) {
+			data = null;
+		} else {
+			data = readRunLenBytes(in);
+		}
+		return new MemoryBTXAttribute(atrrName, data);
+	}
+	static MemoryBTXObject readObject(DataInput in) throws IOException {
+		String name = readString(in);
 		MemoryBTXObject ret = new MemoryBTXObject(name);
 		int count = read32BitUnsigned(in);
 		while (count > 0) {
-			String atrrName = new String(readRunLenBytes(in));
-			byte meta = in.readByte();
-			byte[] data;
-			if (meta == 0) {
-				data = null;
-			} else {
-				data = readRunLenBytes(in);
-			}
-			ret.attrs.add(new MemoryBTXAttribute(atrrName, data));
+			ret.attrs.add(readAttribute(in));
 		}
 		count = read32BitUnsigned(in);
 		while (count > 0) {
-			ret.children.add(readObject_0(in));
+			ret.children.add(readObject(in));
 		}
 		return ret;
 	}
@@ -74,5 +77,9 @@ class BTXHelp_0 {
 		byte[] buf = new byte[len];
 		in.readFully(buf);
 		return buf;
+	}
+	
+	public static String readString(DataInput in) throws IOException {
+		return new String(readRunLenBytes(in));
 	}
 }
