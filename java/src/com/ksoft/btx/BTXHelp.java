@@ -1,6 +1,7 @@
 package com.ksoft.btx;
 
 import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
@@ -39,17 +40,7 @@ public class BTXHelp {
 }
 
 class BTXHelp_0 {
-	static MemoryBTXAttribute readAttribute(DataInput in) throws IOException {
-		String atrrName = readString(in);
-		byte meta = in.readByte();
-		byte[] data;
-		if (meta == 0) {
-			data = null;
-		} else {
-			data = readRunLenBytes(in);
-		}
-		return new MemoryBTXAttribute(atrrName, data);
-	}
+	// Input helpers
 	static MemoryBTXObject readObject(DataInput in) throws IOException {
 		String name = readString(in);
 		MemoryBTXObject ret = new MemoryBTXObject(name);
@@ -64,7 +55,30 @@ class BTXHelp_0 {
 		return ret;
 	}
 	
-	public static int read32BitUnsigned(DataInput in) throws IOException {
+	static MemoryBTXAttribute readAttribute(DataInput in) throws IOException {
+		String atrrName = readString(in);
+		byte meta = in.readByte();
+		byte[] data;
+		if (meta == 0) {
+			data = null;
+		} else {
+			data = readRunLenBytes(in);
+		}
+		return new MemoryBTXAttribute(atrrName, data);
+	}
+	
+	static String readString(DataInput in) throws IOException {
+		return new String(readRunLenBytes(in));
+	}
+	
+	static byte[] readRunLenBytes(DataInput in) throws IOException {
+		int len = read32BitUnsigned(in);
+		byte[] buf = new byte[len];
+		in.readFully(buf);
+		return buf;
+	}
+	
+	static int read32BitUnsigned(DataInput in) throws IOException {
 		int len = in.readInt();
 		if (len < 0) {
 			throw new JavaDoesntHaveUnsigned32BitArrays();
@@ -72,14 +86,45 @@ class BTXHelp_0 {
 		return len;
 	}
 	
-	public static byte[] readRunLenBytes(DataInput in) throws IOException {
-		int len = read32BitUnsigned(in);
-		byte[] buf = new byte[len];
-		in.readFully(buf);
-		return buf;
+	// output helpers
+	static void writeObject(DataOutput out, BTXObject obj) throws IOException {
+		writeString(out, obj.getName());
+		out.writeInt(obj.getAttributeCount());
+		{
+			Iterator<BTXAttribute> attrs = obj.getAttributes();
+			while (attrs.hasNext()) {
+				writeAttribute(out, attrs.next());
+			}
+		}
+		out.writeInt(obj.getChildrenCount());
+		{
+			Iterator<BTXObject> childs = obj.getChildren();
+			while (childs.hasNext()) {
+				writeObject(out, childs.next());
+			}
+		}
 	}
 	
-	public static String readString(DataInput in) throws IOException {
-		return new String(readRunLenBytes(in));
+	static void writeAttribute(DataOutput out, BTXAttribute attr) throws IOException {
+		writeString(out, attr.getName());
+		if (attr.isNull()) {
+			out.writeByte(0);
+		} else {
+			out.writeByte(1);
+			// If this allocation is too inefficient we'll have to have a buffer saved somewhere,
+			// or add to the BTXAttribute a way to pipe directly to a DataOutput interface
+			byte[] buf = new byte[attr.getLength()];
+			attr.fill(buf);
+			out.write(buf);
+		}
+	}
+	
+	static void writeString(DataOutput out, String str) throws IOException {
+		writeRunLengthBytes(out, str.getBytes(), str.length());
+	}
+	
+	static void writeRunLengthBytes(DataOutput out, byte[] buf, int len) throws IOException {
+		out.writeInt(len);
+		out.write(buf, 0, len);
 	}
 }
