@@ -105,18 +105,31 @@ class BTXHelp_0 {
 		}
 	}
 	
-	static void writeAttribute(DataOutput out, BTXAttribute attr) throws IOException {
-		writeString(out, attr.getName());
-		if (attr.isNull()) {
+	static void writeAttribute(DataOutput out, String name, byte[] data, int len)
+			throws IOException {
+		writeString(out, name);
+		if (data == null) {
 			out.writeByte(0);
 		} else {
 			out.writeByte(1);
+			writeRunLengthBytes(out, data, len);
+		}
+	}
+	
+	static void writeAttribute(DataOutput out, BTXAttribute attr) throws IOException {
+		byte[] data;
+		int len;
+		if (attr.isNull()) {
+			data = null;
+			len = 0;
+		} else {
+			len = attr.getLength();
 			// If this allocation is too inefficient we'll have to have a buffer saved somewhere,
 			// or add to the BTXAttribute a way to pipe directly to a DataOutput interface
-			byte[] buf = new byte[attr.getLength()];
-			attr.fill(buf);
-			out.write(buf);
+			data = new byte[len];
+			attr.fill(data);
 		}
+		writeAttribute(out, attr.getName(), data, len);
 	}
 	
 	static void writeString(DataOutput out, String str) throws IOException {

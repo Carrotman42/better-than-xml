@@ -48,15 +48,15 @@ public class BTXParser implements Closeable {
 	}
 	
 	private static class eventData {
-		final eventData prev;
+		final eventData par;
 		final String objName;
 		int attrsLeft;
 		int objsLeft = -1; // Representing that the value hasn't been filled yet
 		
 		MemoryBTXAttribute curAttr;
 		
-		eventData(eventData p, String name) {
-			prev = p;
+		eventData(eventData parent, String name) {
+			par = parent;
 			objName = name;
 		}
 	}
@@ -87,7 +87,7 @@ public class BTXParser implements Closeable {
 		}
 		if (cur.objsLeft == 0) {
 			// Out of children and done with the current object!
-			eventStack = eventStack.prev;
+			eventStack = eventStack.par;
 			return BTXEvent.ENDCHILDREN;
 		} else { // cur.objsLeft > 0
 			// Start reading a new object
