@@ -16,15 +16,14 @@ public class BTXPusher implements Closeable {
 		
 		f.writeByte(0); // version
 		eventData cur = new eventData(null);
-		cur.attributeCountPos = -1;
-		cur.childCountPos = f.getFilePointer();
+		cur.metaPos = f.getFilePointer();
 		eventStack = cur;
 		f.writeInt(0); // Dummy obj count
 	}
 	@Override
 	public void close() throws IOException {
 		while (eventStack != null) {
-			endChildren();
+			endObject();
 		}
 		f.close();
 	}
@@ -32,8 +31,7 @@ public class BTXPusher implements Closeable {
 	private static class eventData {
 		final eventData par;
 		
-		long attributeCountPos;
-		long childCountPos = -1;
+		long metaPos;
 		int attrCount;
 		int childCount;
 		
@@ -47,8 +45,9 @@ public class BTXPusher implements Closeable {
 		eventStack.childCount++;
 		BTXHelp_0.writeString(f, name);
 		eventStack = new eventData(eventStack);
-		eventStack.attributeCountPos = f.getFilePointer();
+		eventStack.metaPos = f.getFilePointer();
 		f.writeInt(0); // Dummy for attr count later
+		f.writeInt(0); // Dummy for child count later
 	}
 	
 	public void addAttribute(String name, String data) throws IOException {
@@ -61,21 +60,21 @@ public class BTXPusher implements Closeable {
 		BTXHelp_0.writeAttribute(f, name, data, len);
 	}
 	
-	public void startChildren() throws IOException {
-		// Done adding attributes
-		eventStack.childCountPos = f.getFilePointer();
-		f.seek(eventStack.attributeCountPos);
-		f.writeInt(eventStack.attrCount);
-		f.seek(eventStack.childCountPos);
-		f.writeInt(0); // Dummy for child count later
-	}
-	
-	public void endChildren() throws IOException {
-		long savePos = f.getFilePointer();
-		f.seek(eventStack.childCountPos);
-		f.writeInt(eventStack.childCount);
-		f.seek(savePos);
+	public void endObject() throws IOException {
+		eventData cur = eventStack;
+		// Pop the next one off the stack
+		eventStack = cur.par;
 		
-		eventStack = eventStack.par;
+		long savePos = f.getFilePointer();
+		f.seek(cur.metaPos);
+		if (eventStack != null) {
+			f.writeInt(cur.attrCount);
+		} else {
+			// Special case of top-level psuedo rootelement:
+			// No attributes allowed
+		}
+		
+		f.writeInt(cur.childCount);
+		f.seek(savePos);
 	}
 }

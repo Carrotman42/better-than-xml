@@ -16,20 +16,15 @@ public class TestBTXPusherParser {
 		
 		try (BTXPusher push = new BTXPusher(testFile)) {
 			push.startObject("root1");
-			push.startChildren();
 			push.startObject("sub 1 1");
-			push.startChildren();
-			push.endChildren();
-			push.endChildren();
+			push.endObject();
+			push.endObject();
 			push.startObject("root2");
-			push.startChildren();
 			push.startObject("sub 2 1");
-			push.startChildren();
-			push.endChildren();
+			push.endObject();
 			push.startObject("sub 2 2");
-			push.startChildren();
-			push.endChildren();
-			push.endChildren();
+			push.endObject();
+			push.endObject();
 		}
 		
 		System.out.println(testFile);
@@ -39,16 +34,22 @@ public class TestBTXPusherParser {
 	public void t() throws IOException {
 		try (BTXParser parse = new BTXParser(testFile)) {
 			BTXEvent ev;
+			String indent = "";
 			while ((ev = parse.next()) != BTXEvent.EOF) {
 				switch (ev) {
 					case ATTRIBUTE :
-						System.out.println("Attribute: " + parse.getLastAttribute());
+						System.out.println(indent
+											+ "Attribute: " + parse.getEventData().getAttribute());
 						break;
-					case OBJECT :
-						System.out.println("Object: " + parse.getObjectName());
+					case START_OBJECT :
+						indent += "\t";
+						System.out.println(indent + "Object: " + parse.getEventData().objName);
+						break;
+					case END_OBJECT :
+						indent = indent.substring(1);
 						break;
 					default :
-						System.out.println(ev);
+						System.out.println(indent + ev);
 						break;
 				}
 			}

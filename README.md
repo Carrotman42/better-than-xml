@@ -30,8 +30,8 @@ In the actual payload of the file, there are three data types. They may be repre
 <ul>
 <li>One STRING which describes the object (eg the name of it)</li>
 <li>An unsigned 32-bit integer describing the number of attributes this OBJECT has</li>
-<li>A list of attributes</li>
 <li>An unsigned 32-bit integer describing the number of OBJECT children this OBJECT contains</li>
+<li>A list of attributes</li>
 <li>A list of child OBJECTS
 </ul>
 </td>

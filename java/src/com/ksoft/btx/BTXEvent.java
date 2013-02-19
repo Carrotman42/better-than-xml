@@ -1,5 +1,5 @@
 package com.ksoft.btx;
 
 public enum BTXEvent {
-	EOF, OBJECT, ATTRIBUTE, STARTCHILDREN, ENDCHILDREN;
+	EOF, START_OBJECT, ATTRIBUTE, END_OBJECT;
 }
