@@ -5,15 +5,10 @@ import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
 
 public class BTXParser implements Closeable {
-	public static enum EventType {
-		EOF, OBJECT, ATTRIBUTE, STARTCHILDREN, ENDCHILDREN;
-	}
-	
-	private final Closeable cl;
-	private final DataInput f;
+	protected final DataInput f;
+	protected final Closeable cl;
 	
 	protected void init() throws IOException {
 		int v = f.readByte();
@@ -22,19 +17,15 @@ public class BTXParser implements Closeable {
 		}
 		
 		// Prime the document iteration with the pseudo rootelement
-		eventData cur = new eventData(null); // No name for psuedo rootelement
+		eventData cur = new eventData(null, null); // No name nor parent for psuedo rootelement
 		// cur.attrsLeft = 0; // No attributes in root element, but this is set by default
 		cur.objsLeft = BTXHelp_0.read32BitUnsigned(f);
-		eventStack.add(cur);
+		eventStack = cur;
 	}
 	
 	
 	public BTXParser(File source) throws IOException {
-		RandomAccessFile fi = new RandomAccessFile(source, "r");
-		f = fi;
-		cl = fi;
-		
-		init();
+		this(new RandomAccessFile(source, "r"));
 	}
 	
 	public BTXParser(DataInput src) throws IOException {
@@ -57,36 +48,37 @@ public class BTXParser implements Closeable {
 	}
 	
 	private static class eventData {
+		final eventData prev;
 		final String objName;
 		int attrsLeft;
 		int objsLeft = -1; // Representing that the value hasn't been filled yet
 		
 		MemoryBTXAttribute curAttr;
 		
-		eventData(String name) {
+		eventData(eventData p, String name) {
+			prev = p;
 			objName = name;
 		}
 	}
-	private final ArrayList<eventData> eventStack = new ArrayList<>();
-	public EventType next() throws IOException {
-		int s = eventStack.size() - 1;
-		if (s == -1) {
+	protected eventData eventStack;
+	public BTXEvent next() throws IOException {
+		eventData cur = eventStack;
+		if (cur == null) {
 			// If there's nothing left in the stack, we're at the end of the file!
-			return EventType.EOF;
+			return BTXEvent.EOF;
 		}
-		eventData cur = eventStack.get(s);
 		
 		if (cur.attrsLeft > 0) {
 			cur.attrsLeft--;
 			cur.curAttr = BTXHelp_0.readAttribute(f);
-			return EventType.ATTRIBUTE;
+			return BTXEvent.ATTRIBUTE;
 		}
 		if (cur.objsLeft == -1) {
 			// We just ran out of ATTRIBUTEs and now we're at the number of child objects
 			int objs;
 			cur.objsLeft = objs = BTXHelp_0.read32BitUnsigned(f);
 			if (objs > 0) { // There are children, signal that!
-				return EventType.STARTCHILDREN;
+				return BTXEvent.STARTCHILDREN;
 			} else {
 				// Else there are no children. To show that fact,
 				// we will fall through and just return ENDCHILDREN
@@ -95,28 +87,29 @@ public class BTXParser implements Closeable {
 		}
 		if (cur.objsLeft == 0) {
 			// Out of children and done with the current object!
-			eventStack.remove(s);
-			return EventType.ENDCHILDREN;
+			eventStack = eventStack.prev;
+			return BTXEvent.ENDCHILDREN;
 		} else { // cur.objsLeft > 0
 			// Start reading a new object
 			cur.objsLeft--;
-			eventData next = new eventData(BTXHelp_0.readString(f));
+			eventData next = new eventData(eventStack, BTXHelp_0.readString(f));
 			next.attrsLeft = BTXHelp_0.read32BitUnsigned(f);
-			return EventType.OBJECT;
+			eventStack = next; // put it as the top of the stack
+			return BTXEvent.OBJECT;
 		}
 	}
 	
 	public int getChildrenLeft() {
-		return eventStack.get(eventStack.size() - 1).objsLeft;
+		return eventStack.objsLeft;
 	}
 	public int getAttrsLeft() {
-		return eventStack.get(eventStack.size() - 1).attrsLeft;
+		return eventStack.attrsLeft;
 	}
 	public String getObjectName() {
-		return eventStack.get(eventStack.size() - 1).objName;
+		return eventStack.objName;
 	}
 	
 	public BTXAttribute getLastAttribute() {
-		return eventStack.get(eventStack.size() - 1).curAttr;
+		return eventStack.curAttr;
 	}
 }
