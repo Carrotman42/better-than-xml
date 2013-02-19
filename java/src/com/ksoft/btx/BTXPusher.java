@@ -12,16 +12,20 @@ public class BTXPusher implements Closeable {
 	protected BTXEvent cur = null;
 	
 	public BTXPusher(File dest) throws IOException {
-		f = new RandomAccessFile(dest, "w");
+		f = new RandomAccessFile(dest, "rw");
 		
 		f.writeByte(0); // version
 		eventData cur = new eventData(null);
 		cur.attributeCountPos = -1;
 		cur.childCountPos = f.getFilePointer();
+		eventStack = cur;
+		f.writeInt(0); // Dummy obj count
 	}
-	
 	@Override
 	public void close() throws IOException {
+		while (eventStack != null) {
+			endChildren();
+		}
 		f.close();
 	}
 	
