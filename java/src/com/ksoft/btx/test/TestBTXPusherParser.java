@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Random;
 
 import org.junit.Test;
 
@@ -16,30 +18,75 @@ import com.ksoft.btx.BTXParser;
 import com.ksoft.btx.BTXPusher;
 
 public class TestBTXPusherParser {
-	private final File testFile;
+	private final Random r;
 	public TestBTXPusherParser() throws IOException {
-		testFile = File.createTempFile("asdfff", "");
-		
-		try (BTXPusher push = new BTXPusher(testFile)) {
-			push.startObject("root1");
-			push.startObject("sub 1 1");
-			push.endObject();
-			push.endObject();
-			push.startObject("root2");
-			push.startObject("sub 2 1");
-			push.endObject();
-			push.startObject("sub 2 2");
-			push.endObject();
-			push.endObject();
+		r = new Random(86753090L);
+	}
+	
+	
+	enum state {
+		START_OBJ, START_ATTR, DO_CHILDREN, END_CHILDREN;
+	}
+	static void createRandomBTX(Random r, File output) throws IOException {
+		ArrayList<state> stack = new ArrayList<>();
+		state cur = state.DO_CHILDREN;
+		int maxlen = r.nextInt(1024 * 8) + 1024 * 4;
+		int len = 0;
+		try (BTXPusher p = new BTXPusher(output)) {
+			while (len < maxlen) {
+				switch (cur) {
+					case START_ATTR :
+						if (r.nextFloat() > 0.90) {
+							cur = state.DO_CHILDREN;
+						} else {
+							byte[] buf = new byte[r.nextInt(1024) + 1024];
+							r.nextBytes(buf);
+							p.addAttribute("attrnname" + r.nextDouble(), buf, buf.length);
+							len++;
+						}
+						break;
+					case DO_CHILDREN :
+						if (r.nextFloat() > 0.90 - stack.size() * 0.5) {
+							cur = state.END_CHILDREN;
+						} else {
+							cur = state.START_OBJ;
+						}
+						break;
+					case START_OBJ :
+						stack.add(cur);
+						cur = state.START_ATTR;
+						p.startObject("objname" + r.nextLong());
+						len++;
+						break;
+					case END_CHILDREN :
+						if (stack.size() == 0) {
+							cur = state.DO_CHILDREN;
+						} else {
+							cur = stack.remove(stack.size() - 1);
+						}
+						break;
+					default :
+						break;
+				}
+			}
 		}
-		
-		System.out.println(testFile);
 	}
 	
 	@Test
-	public void doTheTest() throws IOException {
-		File dest = File.createTempFile("asdfff", "");
-		try (BTXParser parse = new BTXParser(testFile); BTXPusher push = new BTXPusher(dest)) {
+	public void testMultipleTimes() throws IOException {
+		for (int i = 0; i < 10; i++) {
+			File src = File.createTempFile("TestBTXPusherParser-" + i + "-src-", "");
+			File dest = File.createTempFile("TestBTXPusherParser-" + i + "-dest-", "");
+			createRandomBTX(r, src);
+			doTheTest(src, dest);
+			System.out.println("Did test " + i + "; file size: " + src.length());
+			src.delete();
+			dest.delete();
+		}
+	}
+	
+	static void doTheTest(File infile, File outfile) throws IOException {
+		try (BTXParser parse = new BTXParser(infile); BTXPusher push = new BTXPusher(outfile)) {
 			l:
 			while (true) {
 				switch (parse.next()) {
@@ -61,7 +108,7 @@ public class TestBTXPusherParser {
 			}
 		}
 		
-		compareFiles(testFile, dest);
+		compareFiles(infile, outfile);
 	}
 	
 	public static void compareFiles(File f1, File f2) throws IOException {

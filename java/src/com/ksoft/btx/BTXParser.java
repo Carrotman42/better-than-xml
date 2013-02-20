@@ -1,10 +1,12 @@
 package com.ksoft.btx;
 
+import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.DataInput;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 
 public class BTXParser implements Closeable {
 	protected final DataInput f;
@@ -23,7 +25,7 @@ public class BTXParser implements Closeable {
 	
 	
 	public BTXParser(File source) throws IOException {
-		this(new RandomAccessFile(source, "r"));
+		this(new DataInputStream(new BufferedInputStream(new FileInputStream(source))));
 	}
 	
 	public BTXParser(DataInput src) throws IOException {
