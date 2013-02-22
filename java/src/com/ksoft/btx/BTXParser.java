@@ -12,6 +12,36 @@ public class BTXParser implements Closeable {
 	protected final DataInput f;
 	protected final Closeable cl;
 	
+	public static void dump(File f) throws IOException {
+		try (BTXParser p = new BTXParser(f)) {
+			String indent = "";
+			l:
+			while (true) {
+				switch (p.next()) {
+					case ATTRIBUTE : {
+						BTXAttribute at = p.getEventData().getAttribute();
+						byte[] buf = new byte[at.getLength()];
+						at.fill(buf);
+						System.out.println(indent + at.getName() + "=" + new String(buf));
+						break;
+					}
+					case END_OBJECT :
+						indent = indent.substring(2);
+						break;
+					case EOF :
+						break l;
+					case START_OBJECT :
+						System.out.println(indent + p.getEventData().objName);
+						indent += "  ";
+						break;
+					default :
+						break;
+				
+				}
+			}
+		}
+	}
+	
 	protected void init() throws IOException {
 		int v = f.readByte();
 		if (v != 0) {
