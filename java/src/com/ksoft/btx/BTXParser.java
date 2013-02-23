@@ -105,6 +105,13 @@ public class BTXParser implements Closeable {
 			objsLeft = objs;
 			hasChildren = objs > 0;
 		}
+		
+		@Override
+		public String toString() {
+			return "OBJ: '"
+					+ objName + "', attrsLeft: " + attrsLeft + ", chLeft: " + objsLeft + ", attr: "
+					+ this.curAttr;
+		}
 	}
 	
 	protected ParseEventData eventStack;

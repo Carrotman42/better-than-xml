@@ -1,6 +1,6 @@
 package com.ksoft.btx;
 
-public class MemoryBTXAttribute implements BTXAttribute {
+public class MemoryBTXAttribute extends BTXAttribute {
 	private final String name;
 	private final byte[] data;
 	public MemoryBTXAttribute(String name, byte[] data) {
@@ -18,12 +18,11 @@ public class MemoryBTXAttribute implements BTXAttribute {
 	}
 	
 	@Override
-	public void fill(byte[] buf) {
-		System.arraycopy(data, 0, buf, 0, data.length);
-	}
-	
-	@Override
 	public boolean isNull() {
 		return data == null;
+	}
+	@Override
+	public void fill(byte[] dest, int srcStart, int dstStart, int length) {
+		System.arraycopy(data, srcStart, dest, dstStart, length);
 	}
 }
