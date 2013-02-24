@@ -54,12 +54,6 @@ public class Compatibility {
 		}
 	}
 	
-	static class r {
-		void add(Object o) {
-			System.out.println(o);
-		}
-	}
-	
 	private static void btxToXML_help(BTXParser in, XMLEventFactory ev, XMLEventWriter out)
 			throws IOException, XMLStreamException {
 		in.next(); // START_OBJECT

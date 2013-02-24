@@ -8,7 +8,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Random;
 
 import org.junit.Test;
@@ -24,60 +23,14 @@ public class TestBTXPusherParser {
 	}
 	
 	
-	enum state {
-		START_OBJ, START_ATTR, DO_CHILDREN, END_CHILDREN;
-	}
-	static void createRandomBTX(Random r, File output) throws IOException {
-		ArrayList<state> stack = new ArrayList<>();
-		state cur = state.DO_CHILDREN;
-		int maxlen = r.nextInt(1024 * 8) + 1024 * 4;
-		int len = 0;
-		try (BTXPusher p = new BTXPusher(output)) {
-			while (len < maxlen) {
-				switch (cur) {
-					case START_ATTR :
-						if (r.nextFloat() > 0.90) {
-							cur = state.DO_CHILDREN;
-						} else {
-							byte[] buf = new byte[r.nextInt(1024) + 1024];
-							r.nextBytes(buf);
-							p.addAttribute("attrnname" + r.nextDouble(), buf, buf.length);
-							len++;
-						}
-						break;
-					case DO_CHILDREN :
-						if (r.nextFloat() > 0.90 - stack.size() * 0.5) {
-							cur = state.END_CHILDREN;
-						} else {
-							cur = state.START_OBJ;
-						}
-						break;
-					case START_OBJ :
-						stack.add(cur);
-						cur = state.START_ATTR;
-						p.startObject("objname" + r.nextLong());
-						len++;
-						break;
-					case END_CHILDREN :
-						if (stack.size() == 0) {
-							cur = state.DO_CHILDREN;
-						} else {
-							cur = stack.remove(stack.size() - 1);
-						}
-						break;
-					default :
-						break;
-				}
-			}
-		}
-	}
+	
 	
 	@Test
 	public void testMultipleTimes() throws IOException {
 		for (int i = 0; i < 10; i++) {
 			File src = File.createTempFile("TestBTXPusherParser-" + i + "-src-", "");
 			File dest = File.createTempFile("TestBTXPusherParser-" + i + "-dest-", "");
-			createRandomBTX(r, src);
+			TestHelp.createRandomBTX(r, src, 1024, 300);
 			doTheTest(src, dest);
 			System.out.println("Did test " + i + "; file size: " + src.length());
 			src.delete();

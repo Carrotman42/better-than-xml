@@ -3,6 +3,7 @@ package com.ksoft.btx;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.RandomAccessFile;
 
 public class BTXPusher implements Closeable {
@@ -53,6 +54,11 @@ public class BTXPusher implements Closeable {
 	public void addAttribute(String name, String data) throws IOException {
 		byte[] d = data.getBytes();
 		addAttribute(name, d, d.length);
+	}
+	
+	public void addAttribute(String name, InputStream from, int len) throws IOException {
+		eventStack.attrCount++;
+		BTXHelp_0.writeAttribute(f, name, from, len);
 	}
 	
 	public void addAttribute(String name, byte[] data, int len) throws IOException {

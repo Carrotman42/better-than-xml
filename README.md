@@ -43,7 +43,7 @@ In addition, different file versions may have different implementation details:
 <tr><th>Version</th><th>Byte Identifier</th><th>Details</th></tr>
 <tr><td>'0'</td><td>0x00</td>
 <td><ul>
-<li>All references to unsigned integers are in little-endian format</li>
+<li>All references to unsigned integers are in big-endian format</li>
 <li>At the root of the BTX file, after the version byte, there is an unsigned 32-bit integer that the count of root objects in this file. This exists because it doesn't force you have a single root object to contain others if you just want to make a list.</li>
 </ul></td></tr>
 </table>
